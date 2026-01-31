@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { getTodaysPuzzle, clueOrder, AnimeData } from "@/data/animeData";
+import { getTodaysPuzzle, getTodaysCategory, clueOrder, AnimeData, Category, getTodayString } from "@/data/animeData";
 
 interface GameState {
   guesses: string[];
@@ -24,10 +24,9 @@ const getInitialState = (): GameState => ({
   lastPlayedDate: null,
 });
 
-const getTodayString = () => new Date().toISOString().split("T")[0];
-
 export const useGameState = () => {
   const [puzzle] = useState<AnimeData>(getTodaysPuzzle);
+  const [category] = useState<Category>(getTodaysCategory);
   const [gameState, setGameState] = useState<GameState>(getInitialState);
   const [isShaking, setIsShaking] = useState(false);
   const [showImpact, setShowImpact] = useState(false);
@@ -37,40 +36,45 @@ export const useGameState = () => {
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (stored) {
-      const parsed: GameState = JSON.parse(stored);
-      const today = getTodayString();
-      
-      if (parsed.lastPlayedDate === today) {
-        // Same day, restore state
-        setGameState(parsed);
-        if (parsed.failed && parsed.previousStreak > 0) {
-          setLostStreak(parsed.previousStreak);
-        }
-      } else if (parsed.lastPlayedDate) {
-        // New day, check if streak continues
-        const lastDate = new Date(parsed.lastPlayedDate);
-        const todayDate = new Date(today);
-        const diffDays = Math.floor(
-          (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-        );
-        
-        if (diffDays === 1 && parsed.solved) {
-          // Continue streak
-          setGameState({
-            ...getInitialState(),
-            streak: parsed.streak,
-            previousStreak: parsed.streak,
-          });
-        } else {
-          // Reset streak - track lost streak if they had one
-          if (parsed.streak > 0) {
-            setLostStreak(parsed.streak);
+      try {
+        const parsed: GameState = JSON.parse(stored);
+        const today = getTodayString();
+
+        if (parsed.lastPlayedDate === today) {
+          // Same day, restore state
+          setGameState(parsed);
+          if (parsed.failed && parsed.previousStreak > 0) {
+            setLostStreak(parsed.previousStreak);
           }
-          setGameState({
-            ...getInitialState(),
-            previousStreak: parsed.streak,
-          });
+        } else if (parsed.lastPlayedDate) {
+          // New day, check if streak continues
+          const lastDate = new Date(parsed.lastPlayedDate);
+          const todayDate = new Date(today);
+          const diffDays = Math.floor(
+            (todayDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24)
+          );
+
+          if (diffDays === 1 && parsed.solved) {
+            // Continue streak
+            setGameState({
+              ...getInitialState(),
+              streak: parsed.streak,
+              previousStreak: parsed.streak,
+            });
+          } else {
+            // Reset streak - track lost streak if they had one
+            if (parsed.streak > 0) {
+              setLostStreak(parsed.streak);
+            }
+            setGameState({
+              ...getInitialState(),
+              previousStreak: parsed.streak,
+            });
+          }
         }
+      } catch {
+        // Invalid stored state, start fresh
+        setGameState(getInitialState());
       }
     }
   }, []);
@@ -108,11 +112,11 @@ export const useGameState = () => {
     } else {
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
-      
+
       if (isFailed) {
         setLostStreak(gameState.streak);
       }
-      
+
       setGameState((prev) => ({
         ...prev,
         guesses: newGuesses,
@@ -129,16 +133,33 @@ export const useGameState = () => {
 
   const generateShareText = useCallback(() => {
     if (!gameState.solved && !gameState.failed) return "";
-    
+
+    const today = getTodayString();
+    const guessCount = gameState.guesses.length;
+
+    // Generate Wordle-style block grid
+    // Each row represents a guess: filled block for correct, empty for wrong
+    const blocks = gameState.guesses.map((_, i) => {
+      const isLastGuess = i === guessCount - 1;
+      if (isLastGuess && gameState.solved) {
+        return "🟩"; // Green for winning guess
+      }
+      return "⬛"; // Black for wrong guesses
+    }).join("");
+
+    // Add empty boxes for unused guesses (shows how many guesses were left)
+    const remainingBoxes = "⬜".repeat(MAX_GUESSES - guessCount);
+    const fullGrid = blocks + remainingBoxes;
+
+    // Format as 2 rows of 4 for visual appeal
+    const row1 = fullGrid.slice(0, 4);
+    const row2 = fullGrid.slice(4, 8);
+
     const result = gameState.solved
-      ? `🎯 I solved today's ANIHUNTER in ${gameState.guesses.length}/8 guesses!`
-      : `💀 I failed today's ANIHUNTER...`;
-    
-    const blocks = gameState.guesses.map((_, i) => 
-      i === gameState.guesses.length - 1 && gameState.solved ? "⬛" : "⬜"
-    ).join("");
-    
-    return `${result}\n\n${blocks}\n\nhttps://anihunter.com`;
+      ? `ANIHUNTER ${today}\n🎯 ${guessCount}/${MAX_GUESSES}`
+      : `ANIHUNTER ${today}\n💀 X/${MAX_GUESSES}`;
+
+    return `${result}\n\n${row1}\n${row2}\n\nhttps://anihunter.com`;
   }, [gameState]);
 
   const getStreakMessage = useCallback(() => {
@@ -154,16 +175,45 @@ export const useGameState = () => {
     return null;
   }, [gameState, lostStreak]);
 
+  // Copy share text to clipboard using Web Clipboard API
+  const copyShareText = useCallback(async (): Promise<boolean> => {
+    const text = generateShareText();
+    if (!text) return false;
+
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      // Fallback for older browsers
+      try {
+        const textArea = document.createElement("textarea");
+        textArea.value = text;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand("copy");
+        document.body.removeChild(textArea);
+        return true;
+      } catch {
+        return false;
+      }
+    }
+  }, [generateShareText]);
+
   return {
     puzzle,
+    category,
     gameState,
     isShaking,
     showImpact,
     submitGuess,
     getVisibleClues,
     generateShareText,
+    copyShareText,
     getStreakMessage,
     maxGuesses: MAX_GUESSES,
     remainingGuesses: MAX_GUESSES - gameState.guesses.length,
+    guessCount: gameState.guesses.length,
   };
 };
