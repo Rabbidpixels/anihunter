@@ -1,5 +1,6 @@
+import { useState } from "react";
 import { MangaPanel } from "./MangaPanel";
-import { Share2 } from "lucide-react";
+import { Share2, Check, Copy } from "lucide-react";
 
 interface ResultPanelProps {
   solved: boolean;
@@ -7,36 +8,49 @@ interface ResultPanelProps {
   guessCount: number;
   streakMessage: string | null;
   shareText: string;
+  onCopyShare: () => Promise<boolean>;
 }
 
-export const ResultPanel = ({ 
-  solved, 
-  failed, 
-  guessCount, 
+export const ResultPanel = ({
+  solved,
+  failed,
+  guessCount,
   streakMessage,
-  shareText 
+  shareText,
+  onCopyShare
 }: ResultPanelProps) => {
+  const [copied, setCopied] = useState(false);
+
   if (!solved && !failed) return null;
 
   const handleShare = async () => {
+    // Try native share first (mobile)
     if (navigator.share) {
       try {
         await navigator.share({
           title: "ANIHUNTER",
           text: shareText,
         });
-      } catch (err) {
-        // User cancelled or error
-        copyToClipboard();
+        return;
+      } catch {
+        // User cancelled or error, fall through to copy
       }
-    } else {
-      copyToClipboard();
+    }
+
+    // Fallback to clipboard copy
+    const success = await onCopyShare();
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     }
   };
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(shareText);
-    alert("Result copied to clipboard!");
+  const handleCopy = async () => {
+    const success = await onCopyShare();
+    if (success) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
   };
 
   return (
@@ -73,15 +87,24 @@ export const ResultPanel = ({
             </>
           )}
 
-          <button
-            onClick={handleShare}
-            className="manga-button-filled inline-flex items-center gap-3"
-          >
-            <Share2 size={20} />
-            SHARE YOUR RESULT
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
+            <button
+              onClick={handleShare}
+              className="manga-button-filled inline-flex items-center justify-center gap-3"
+            >
+              <Share2 size={20} />
+              SHARE RESULT
+            </button>
+            <button
+              onClick={handleCopy}
+              className="manga-button inline-flex items-center justify-center gap-3"
+            >
+              {copied ? <Check size={20} /> : <Copy size={20} />}
+              {copied ? "COPIED!" : "COPY TO CLIPBOARD"}
+            </button>
+          </div>
 
-          <div className="mt-8 p-4 border-2 border-foreground bg-background">
+          <div className="p-4 border-2 border-foreground bg-background">
             <pre className="font-body text-sm text-left whitespace-pre-wrap">
               {shareText}
             </pre>

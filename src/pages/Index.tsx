@@ -9,14 +9,17 @@ import { Footer } from "@/components/Footer";
 const Index = () => {
   const {
     puzzle,
+    category,
     gameState,
     isShaking,
     showImpact,
     submitGuess,
     getVisibleClues,
     generateShareText,
+    copyShareText,
     getStreakMessage,
     remainingGuesses,
+    guessCount,
   } = useGameState();
 
   const visibleClues = getVisibleClues();
@@ -25,7 +28,7 @@ const Index = () => {
     <div className="min-h-screen bg-page">
       <div className="container max-w-5xl py-6 md:py-12">
         {/* Hero Section */}
-        <HeroPanel />
+        <HeroPanel category={category} />
 
         {/* Puzzle Section */}
         <div className="mt-6 md:mt-8">
@@ -35,7 +38,7 @@ const Index = () => {
             failed={gameState.failed}
             isShaking={isShaking}
             showImpact={showImpact}
-            currentClueIndex={gameState.currentClueIndex}
+            guessCount={guessCount}
           />
         </div>
 
@@ -69,9 +72,10 @@ const Index = () => {
           <ResultPanel
             solved={gameState.solved}
             failed={gameState.failed}
-            guessCount={gameState.guesses.length}
+            guessCount={guessCount}
             streakMessage={getStreakMessage()}
             shareText={generateShareText()}
+            onCopyShare={copyShareText}
           />
         </div>
 

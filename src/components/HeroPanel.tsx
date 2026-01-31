@@ -1,7 +1,12 @@
 import { MangaPanel } from "./MangaPanel";
 import { ThemeToggle } from "./ThemeToggle";
+import { Category } from "@/data/animeData";
 
-export const HeroPanel = () => {
+interface HeroPanelProps {
+  category?: Category;
+}
+
+export const HeroPanel = ({ category }: HeroPanelProps) => {
   return (
     <MangaPanel thick className="relative overflow-hidden">
       {/* Banner Image Container */}
@@ -18,7 +23,7 @@ export const HeroPanel = () => {
 
         {/* Top overlay with badges and theme toggle */}
         <div className="absolute top-0 left-0 right-0 p-4 md:p-6 flex items-start justify-between">
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
             <span className="clue-badge-filled text-[10px] md:text-xs">Daily Challenge</span>
             <span className="clue-badge text-[10px] md:text-xs">
               {new Date().toLocaleDateString("en-US", {
@@ -26,6 +31,11 @@ export const HeroPanel = () => {
                 day: "numeric"
               })}
             </span>
+            {category && (
+              <span className="clue-badge text-[10px] md:text-xs">
+                {category}
+              </span>
+            )}
           </div>
           <ThemeToggle />
         </div>
