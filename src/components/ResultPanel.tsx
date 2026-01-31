@@ -5,7 +5,7 @@ interface ResultPanelProps {
   solved: boolean;
   failed: boolean;
   guessCount: number;
-  streak: number;
+  streakMessage: string | null;
   shareText: string;
 }
 
@@ -13,7 +13,7 @@ export const ResultPanel = ({
   solved, 
   failed, 
   guessCount, 
-  streak,
+  streakMessage,
   shareText 
 }: ResultPanelProps) => {
   if (!solved && !failed) return null;
@@ -22,7 +22,7 @@ export const ResultPanel = ({
     if (navigator.share) {
       try {
         await navigator.share({
-          title: "ANIME RECALL",
+          title: "ANIHUNTER",
           text: shareText,
         });
       } catch (err) {
@@ -49,20 +49,27 @@ export const ResultPanel = ({
                 VICTORY!
               </h2>
               <p className="font-body text-lg md:text-xl mb-2">
-                You solved it in <span className="font-bold">{guessCount}</span> guess{guessCount !== 1 ? "es" : ""}
+                Got it in <span className="font-bold">{guessCount}</span> {guessCount === 1 ? "try" : "tries"}!
               </p>
-              <p className="font-body text-muted-foreground mb-8">
-                Current streak: <span className="font-bold">{streak}</span> day{streak !== 1 ? "s" : ""}
-              </p>
+              {streakMessage && (
+                <p className="font-body text-lg text-muted-foreground mb-8">
+                  {streakMessage}
+                </p>
+              )}
             </>
           ) : (
             <>
               <h2 className="manga-title text-4xl md:text-6xl mb-4">
                 DEFEAT
               </h2>
-              <p className="font-body text-lg md:text-xl mb-8">
+              <p className="font-body text-lg md:text-xl mb-2">
                 The answer was right there... Come back tomorrow.
               </p>
+              {streakMessage && (
+                <p className="font-body text-lg text-muted-foreground mb-8">
+                  {streakMessage}
+                </p>
+              )}
             </>
           )}
 

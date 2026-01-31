@@ -7,11 +7,12 @@ interface GameState {
   failed: boolean;
   currentClueIndex: number;
   streak: number;
+  previousStreak: number;
   lastPlayedDate: string | null;
 }
 
 const MAX_GUESSES = 8;
-const STORAGE_KEY = "anime-recall-state";
+const STORAGE_KEY = "anihunter-state";
 
 const getInitialState = (): GameState => ({
   guesses: [],
@@ -19,6 +20,7 @@ const getInitialState = (): GameState => ({
   failed: false,
   currentClueIndex: 0,
   streak: 0,
+  previousStreak: 0,
   lastPlayedDate: null,
 });
 
@@ -29,6 +31,7 @@ export const useGameState = () => {
   const [gameState, setGameState] = useState<GameState>(getInitialState);
   const [isShaking, setIsShaking] = useState(false);
   const [showImpact, setShowImpact] = useState(false);
+  const [lostStreak, setLostStreak] = useState<number>(0);
 
   // Load state from localStorage
   useEffect(() => {
@@ -40,6 +43,9 @@ export const useGameState = () => {
       if (parsed.lastPlayedDate === today) {
         // Same day, restore state
         setGameState(parsed);
+        if (parsed.failed && parsed.previousStreak > 0) {
+          setLostStreak(parsed.previousStreak);
+        }
       } else if (parsed.lastPlayedDate) {
         // New day, check if streak continues
         const lastDate = new Date(parsed.lastPlayedDate);
@@ -53,10 +59,17 @@ export const useGameState = () => {
           setGameState({
             ...getInitialState(),
             streak: parsed.streak,
+            previousStreak: parsed.streak,
           });
         } else {
-          // Reset streak
-          setGameState(getInitialState());
+          // Reset streak - track lost streak if they had one
+          if (parsed.streak > 0) {
+            setLostStreak(parsed.streak);
+          }
+          setGameState({
+            ...getInitialState(),
+            previousStreak: parsed.streak,
+          });
         }
       }
     }
@@ -95,11 +108,17 @@ export const useGameState = () => {
     } else {
       setIsShaking(true);
       setTimeout(() => setIsShaking(false), 500);
+      
+      if (isFailed) {
+        setLostStreak(gameState.streak);
+      }
+      
       setGameState((prev) => ({
         ...prev,
         guesses: newGuesses,
         failed: isFailed,
         currentClueIndex: Math.min(prev.currentClueIndex + 1, clueOrder.length - 1),
+        previousStreak: isFailed ? prev.streak : prev.previousStreak,
       }));
     }
   }, [gameState, puzzle.title]);
@@ -112,15 +131,28 @@ export const useGameState = () => {
     if (!gameState.solved && !gameState.failed) return "";
     
     const result = gameState.solved
-      ? `🎯 I solved today's ANIME RECALL in ${gameState.guesses.length}/8 guesses!`
-      : `💀 I failed today's ANIME RECALL...`;
+      ? `🎯 I solved today's ANIHUNTER in ${gameState.guesses.length}/8 guesses!`
+      : `💀 I failed today's ANIHUNTER...`;
     
     const blocks = gameState.guesses.map((_, i) => 
       i === gameState.guesses.length - 1 && gameState.solved ? "⬛" : "⬜"
     ).join("");
     
-    return `${result}\n\n${blocks}\n\nCan you beat me? 👊`;
+    return `${result}\n\n${blocks}\n\nhttps://anihunter.com`;
   }, [gameState]);
+
+  const getStreakMessage = useCallback(() => {
+    if (gameState.solved) {
+      if (gameState.streak === 1) {
+        return "Starting a new streak!";
+      }
+      return `🔥 ${gameState.streak} day${gameState.streak !== 1 ? "s" : ""} in a row!`;
+    }
+    if (gameState.failed && lostStreak > 0) {
+      return `💔 Lost my ${lostStreak} day streak today...`;
+    }
+    return null;
+  }, [gameState, lostStreak]);
 
   return {
     puzzle,
@@ -130,6 +162,7 @@ export const useGameState = () => {
     submitGuess,
     getVisibleClues,
     generateShareText,
+    getStreakMessage,
     maxGuesses: MAX_GUESSES,
     remainingGuesses: MAX_GUESSES - gameState.guesses.length,
   };

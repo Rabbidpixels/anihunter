@@ -15,13 +15,14 @@ const Index = () => {
     submitGuess,
     getVisibleClues,
     generateShareText,
+    getStreakMessage,
     remainingGuesses,
   } = useGameState();
 
   const visibleClues = getVisibleClues();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-page">
       <div className="container max-w-5xl py-6 md:py-12">
         {/* Hero Section */}
         <HeroPanel />
@@ -34,6 +35,7 @@ const Index = () => {
             failed={gameState.failed}
             isShaking={isShaking}
             showImpact={showImpact}
+            currentClueIndex={gameState.currentClueIndex}
           />
         </div>
 
@@ -68,7 +70,7 @@ const Index = () => {
             solved={gameState.solved}
             failed={gameState.failed}
             guessCount={gameState.guesses.length}
-            streak={gameState.streak}
+            streakMessage={getStreakMessage()}
             shareText={generateShareText()}
           />
         </div>

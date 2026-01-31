@@ -7,6 +7,7 @@ interface PuzzlePanelProps {
   failed: boolean;
   isShaking: boolean;
   showImpact: boolean;
+  currentClueIndex: number;
 }
 
 export const PuzzlePanel = ({ 
@@ -14,9 +15,24 @@ export const PuzzlePanel = ({
   solved, 
   failed, 
   isShaking,
-  showImpact 
+  showImpact,
+  currentClueIndex
 }: PuzzlePanelProps) => {
-  const hiddenTitle = title.replace(/[A-Z]/gi, "?").replace(/[0-9]/g, "?");
+  // Show first letter of each word when clue 7 (index 6) is revealed
+  const getHiddenTitle = () => {
+    if (currentClueIndex >= 6) {
+      // Show first letter of each word, rest as ?
+      return title.split(" ").map(word => {
+        if (word.length === 0) return "";
+        const firstChar = word[0];
+        const rest = word.slice(1).replace(/[A-Za-z0-9]/g, "?");
+        return firstChar + rest;
+      }).join(" ");
+    }
+    return title.replace(/[A-Z]/gi, "?").replace(/[0-9]/g, "?");
+  };
+
+  const hiddenTitle = getHiddenTitle();
   
   return (
     <MangaPanel 
@@ -58,6 +74,7 @@ export const PuzzlePanel = ({
         {!solved && !failed && (
           <p className="mt-6 font-body text-muted-foreground text-sm">
             {title.length} characters • {title.split(" ").length} word(s)
+            {currentClueIndex >= 6 && " • First letters revealed!"}
           </p>
         )}
         
