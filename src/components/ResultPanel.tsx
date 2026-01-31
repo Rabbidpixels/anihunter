@@ -146,9 +146,13 @@ export const ResultPanel = ({
           )}
 
           {/* Result boxes in a single line */}
-          <div className="flex justify-center gap-1 md:gap-2 mb-8">
+          <div className="flex justify-center gap-1 md:gap-2 mb-4">
             {renderResultBoxes()}
           </div>
+
+          {/* Taglines */}
+          <p className="font-display text-xl md:text-2xl mb-1">How well do you know Anime?</p>
+          <p className="font-body text-muted-foreground mb-8">Try your luck at trivia.</p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
             <button

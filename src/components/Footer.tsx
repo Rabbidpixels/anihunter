@@ -16,7 +16,7 @@ export const Footer = () => {
           <img
             src="/footer.png"
             alt="Follow us on Facebook"
-            className="h-16 md:h-20 w-auto object-contain"
+            className="h-48 md:h-60 w-auto object-contain"
           />
         </a>
       </div>
