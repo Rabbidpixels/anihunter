@@ -23,8 +23,20 @@ export const Footer = () => {
           />
         </a>
 
+        {/* External Link */}
+        <div className="w-full pt-4 border-t-2 border-foreground">
+          <a
+            href="https://usetobeen.cool"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-display text-sm hover:underline underline-offset-4 inline-block"
+          >
+            Nostalgic Trivia
+          </a>
+        </div>
+
         {/* Navigation Links */}
-        <nav className="flex flex-wrap justify-center gap-4 md:gap-6 pt-4 border-t-2 border-foreground w-full">
+        <nav className="flex flex-wrap justify-center gap-4 md:gap-6 w-full">
           <Link
             to="/"
             className="font-display text-sm hover:underline underline-offset-4"
@@ -58,9 +70,11 @@ export const Footer = () => {
         </nav>
 
         {/* Copyright */}
-        <p className="font-body text-xs text-muted-foreground text-center">
-          © {currentYear} AniHunter. Not affiliated with any anime studios.
-        </p>
+        <div className="font-body text-xs text-muted-foreground text-center">
+          <p>© {currentYear} AniHunter</p>
+          <p className="text-[10px] mt-1">A product of RabbidpixelsLLC</p>
+          <p className="mt-1">Not affiliated with any anime studios.</p>
+        </div>
       </div>
     </MangaPanel>
   );
